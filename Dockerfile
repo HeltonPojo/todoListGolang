@@ -1,32 +1,15 @@
-# Dockerfile
+FROM golang:1.23
 
-# Use official Golang image as base
-FROM golang:1.20-alpine
-
-# Set environment variables
-ENV GO111MODULE=on \
-  CGO_ENABLED=0 \
-  GOOS=linux \
-  GOARCH=amd64
-
-# Set working directory
 WORKDIR /app
 
-# Copy go mod and sum files
-COPY go.mod ./
-COPY go.sum ./
+# Instala o Modd
+RUN go install github.com/cortesi/modd/cmd/modd@latest
 
-# Download dependencies
-RUN go mod download
-
-# Copy source code
+# Copia tudo (vamos sobrescrever com volume no compose)
 COPY . .
 
-# Build the Go app
-RUN go build -o main .
-
-# Expose port 8080
+# Exponha a porta usada pela API
 EXPOSE 8080
 
-# Run the executable
-CMD ["./main"]
+# Comando inicial: roda modd
+CMD ["/go/bin/modd", "-f", "modd.conf"]

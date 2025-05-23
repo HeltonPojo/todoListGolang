@@ -39,7 +39,7 @@ func Register(c *gin.Context, db *gorm.DB) {
 
 	input.Password = string(hashaedPassowrd)
 
-	if err := db.Create(&input); err != nil {
+	if err := db.Create(&input).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Could not create user"})
 		return
 	}

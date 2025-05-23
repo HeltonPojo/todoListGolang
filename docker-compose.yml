@@ -14,7 +14,7 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=todo_db
-    volumes:
+    volumes: 
       - .:/app
     restart: unless-stopped
 
