@@ -19,7 +19,12 @@ type Claims struct {
 }
 
 func Register(c *gin.Context, db *gorm.DB) {
-	var input models.User
+	var input struct {
+		Email    string `json:"email"`
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Input"})
 		return
@@ -31,20 +36,24 @@ func Register(c *gin.Context, db *gorm.DB) {
 		return
 	}
 
-	hashaedPassowrd, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Could not ecrypt password"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not ecrypt password"})
 		return
 	}
 
-	input.Password = string(hashaedPassowrd)
+	user := models.User{
+		Username: input.Username,
+		Email:    input.Email,
+		Password: string(hashedPassword),
+	}
 
-	if err := db.Create(&input).Error; err != nil {
+	if err := db.Create(&user).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Could not create user"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "User created"})
+	c.JSON(http.StatusCreated, gin.H{"message": "User Created"})
 }
 
 func Login(c *gin.Context, db *gorm.DB) {
@@ -54,22 +63,25 @@ func Login(c *gin.Context, db *gorm.DB) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": ""})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
 	var user models.User
 	if err := db.Where("email = ?", input.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": ""})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email"})
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": ""})
+	pass := []byte(input.Password)
+	hashedPassword := []byte(user.Password)
+
+	if err := bcrypt.CompareHashAndPassword(hashedPassword, pass); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication Error"})
 		return
 	}
 
-	expirationTime := time.Now().Add(2 * time.Hour)
+	expirationTime := time.Now().Add(5 * time.Minute)
 	claims := &Claims{
 		UserID: user.ID,
 		StandardClaims: jwt.StandardClaims{
@@ -77,12 +89,16 @@ func Login(c *gin.Context, db *gorm.DB) {
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := token.SignedString(jwtKey)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": ""})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generateToken"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"token": tokenStr})
+}
+
+func Test(c *gin.Context) {
+	c.JSON(http.StatusCreated, gin.H{"funciona": jwt.SigningMethodHS256.Alg(), "outro": jwt.SigningMethodES256.Alg()})
 }

@@ -44,7 +44,7 @@ func CreateTask(c *gin.Context, db *gorm.DB) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Data"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Input"})
 		return
 	}
 
@@ -54,7 +54,7 @@ func CreateTask(c *gin.Context, db *gorm.DB) {
 		UserID:      userID,
 	}
 	if err := db.Create(&task).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Data"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not creat task"})
 		return
 	}
 
@@ -78,7 +78,7 @@ func UpdateTask(c *gin.Context, db *gorm.DB) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Could not find the task"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Input"})
 		return
 	}
 

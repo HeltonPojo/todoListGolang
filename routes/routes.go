@@ -17,10 +17,14 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB) {
 		public.POST("/login", func(c *gin.Context) {
 			controllers.Login(c, db)
 		})
+
 	}
 
 	protected := r.Group("/tasks")
 	protected.Use(middleware.AuthMiddleware())
 	{
+		protected.POST("/teste", func(c *gin.Context) {
+			controllers.Test(c)
+		})
 	}
 }
